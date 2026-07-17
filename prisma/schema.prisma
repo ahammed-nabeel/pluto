@@ -1,0 +1,399 @@
+// Proteus — Prisma Schema
+// PostgreSQL + all 10 required models with exact fields from spec
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────
+
+enum AuthProvider {
+  google
+  microsoft
+  credentials
+}
+
+enum GlobalRole {
+  super_admin
+  admin
+  member
+  viewer
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+enum BoardMemberRole {
+  admin
+  editor
+  member
+  viewer
+}
+
+enum CardSource {
+  Meta
+  IVR
+  Google
+  Website
+  Referral
+  Other
+  Outbound
+}
+
+enum CardLabel {
+  Hot
+  Warm
+  Cold
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+  overdue
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum FileType {
+  image
+  video
+  document
+  camera_capture
+}
+
+// ─────────────────────────────────────────────────────
+// User
+// ─────────────────────────────────────────────────────
+
+model User {
+  id                  String       @id @default(uuid())
+  name                String
+  email               String       @unique
+  emailVerified       DateTime?
+  auth_provider       AuthProvider @default(credentials)
+  profile_picture_url String?
+  password_hash       String?      // nullable for OAuth-only accounts
+  role                GlobalRole   @default(member)
+  status              UserStatus   @default(active)
+  created_at          DateTime     @default(now())
+  updated_at          DateTime     @updatedAt
+  last_login          DateTime?
+
+  // Auth.js relations
+  accounts  Account[]
+  sessions  Session[]
+
+  // App relations
+  ownedBoards       Board[]          @relation("BoardOwner")
+  boardMemberships  BoardMember[]
+  createdLists      List[]           @relation("ListCreator")
+  ownedCards        Card[]           @relation("CardOwner")
+  createdCards      Card[]           @relation("CardCreator")
+  assignedTasks     Task[]           @relation("TaskAssignee")
+  createdTasks      Task[]           @relation("TaskCreator")
+  checkedItems      ChecklistItem[]  @relation("ItemChecker")
+  uploadedFiles     Attachment[]
+  activityLogs      ActivityLog[]    @relation("ActivityPerformer")
+  createdTemplates  ChecklistTemplate[] @relation("TemplateCreator")
+  createdComments   CardComment[]    @relation("CommentCreator")
+
+  @@map("users")
+}
+
+// Auth.js required models
+model Account {
+  id                String   @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─────────────────────────────────────────────────────
+// Board
+// ─────────────────────────────────────────────────────
+
+model Board {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String?  @unique
+  description String?
+  owner_id    String
+  is_archived Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  settings    Json     @default("{}")
+  // settings shape: { currency, sourceList, labelColors, permissions per role }
+
+  owner       User          @relation("BoardOwner", fields: [owner_id], references: [id])
+  members     BoardMember[]
+  lists       List[]
+  cards       Card[]        // denormalized for easy board-level queries
+  activityLogs ActivityLog[]
+  templates   ChecklistTemplate[]
+
+  @@map("boards")
+}
+
+// ─────────────────────────────────────────────────────
+// Board Member
+// ─────────────────────────────────────────────────────
+
+model BoardMember {
+  id          String          @id @default(uuid())
+  board_id    String
+  user_id     String
+  role        BoardMemberRole @default(member)
+  permissions Json            @default("{}")
+  // permissions shape: { create_list, delete_card, assign_task, view_reports, manage_members }
+  is_starred  Boolean         @default(false)
+  joined_at   DateTime        @default(now())
+
+  board Board @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([board_id, user_id])
+  @@map("board_members")
+}
+
+// ─────────────────────────────────────────────────────
+// List (Kanban Column / Stage)
+// ─────────────────────────────────────────────────────
+
+model List {
+  id               String   @id @default(uuid())
+  board_id         String
+  title            String
+  position         Float    // float for midpoint repositioning without full re-index
+  created_by       String
+  mandatory_fields String[] @default([])
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  board      Board  @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  creator    User   @relation("ListCreator", fields: [created_by], references: [id])
+  cards      Card[]
+
+  @@map("lists")
+}
+
+// ─────────────────────────────────────────────────────
+// Card
+// ─────────────────────────────────────────────────────
+
+model Card {
+  id               String     @id @default(uuid())
+  list_id          String
+  board_id         String
+  project_name     String
+  product          String?
+  source           CardSource?
+  description      String?    @db.Text
+  card_value       Decimal?   @db.Decimal(12, 2)
+  label            CardLabel?
+  client_name      String?
+  contact_number   String?
+  location_lat     Float?
+  location_lng     Float?
+  location_address String?
+  card_owner_id    String?
+  created_by       String
+  cover_image_url  String?
+  position         Float      // float for midpoint repositioning
+  is_archived      Boolean    @default(false)
+  tags             String[]   @default([])
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  list       List   @relation(fields: [list_id], references: [id], onDelete: Cascade)
+  board      Board  @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  cardOwner  User?  @relation("CardOwner", fields: [card_owner_id], references: [id])
+  creator    User   @relation("CardCreator", fields: [created_by], references: [id])
+
+  tasks         Task[]
+  checklistItems ChecklistItem[]
+  attachments   Attachment[]
+  activityLogs  ActivityLog[]
+  comments      CardComment[]
+
+  @@map("cards")
+}
+
+// ─────────────────────────────────────────────────────
+// Checklist Template (Admin-defined reusable templates)
+// ─────────────────────────────────────────────────────
+
+model ChecklistTemplate {
+  id         String   @id @default(uuid())
+  board_id   String?  // null = global (super admin only)
+  name       String
+  items      Json     @default("[]")
+  // items shape: [{ id, text, order }]
+  created_by String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  board   Board? @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  creator User   @relation("TemplateCreator", fields: [created_by], references: [id])
+
+  checklistItems ChecklistItem[]
+
+  @@map("checklist_templates")
+}
+
+// ─────────────────────────────────────────────────────
+// Checklist Item (per-card checklist items)
+// ─────────────────────────────────────────────────────
+
+model ChecklistItem {
+  id          String    @id @default(uuid())
+  card_id     String
+  template_id String?   // nullable — custom items won't reference a template
+  item_text   String
+  is_checked  Boolean   @default(false)
+  checked_by  String?
+  checked_at  DateTime?
+  position    Float     @default(0)
+  created_at  DateTime  @default(now())
+
+  card     Card               @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  template ChecklistTemplate? @relation(fields: [template_id], references: [id])
+  checker  User?              @relation("ItemChecker", fields: [checked_by], references: [id])
+
+  @@map("checklist_items")
+}
+
+// ─────────────────────────────────────────────────────
+// Task
+// ─────────────────────────────────────────────────────
+
+model Task {
+  id          String       @id @default(uuid())
+  card_id     String
+  title       String
+  description String?      @db.Text
+  assigned_to String?
+  due_date    DateTime?
+  status      TaskStatus   @default(pending)
+  priority    TaskPriority @default(medium)
+  created_by  String
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  card     Card  @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  assignee User? @relation("TaskAssignee", fields: [assigned_to], references: [id])
+  creator  User  @relation("TaskCreator", fields: [created_by], references: [id])
+
+  @@map("tasks")
+}
+
+// ─────────────────────────────────────────────────────
+// Attachment
+// ─────────────────────────────────────────────────────
+
+model Attachment {
+  id          String   @id @default(uuid())
+  card_id     String
+  file_url    String
+  file_name   String
+  file_size   Int?     // bytes
+  file_type   FileType
+  mime_type   String?
+  uploaded_by String
+  uploaded_at DateTime @default(now())
+
+  card     Card @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploaded_by], references: [id])
+
+  @@map("attachments")
+}
+
+// ─────────────────────────────────────────────────────
+// Activity Log
+// ─────────────────────────────────────────────────────
+
+model ActivityLog {
+  id           String   @id @default(uuid())
+  board_id     String?
+  card_id      String?
+  action       String   // e.g. "moved card to Won", "assigned task to John"
+  action_type  String   // e.g. "card_moved", "task_assigned", "member_added"
+  metadata     Json?    // additional context (from_list, to_list, etc.)
+  performed_by String
+  timestamp    DateTime @default(now())
+
+  board     Board? @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  card      Card?  @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  performer User   @relation("ActivityPerformer", fields: [performed_by], references: [id])
+
+  @@map("activity_logs")
+}
+
+// ─────────────────────────────────────────────────────
+// Card Comment
+// ─────────────────────────────────────────────────────
+
+model CardComment {
+  id           String   @id @default(uuid())
+  card_id      String
+  content      String   @db.Text
+  created_by   String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  card         Card     @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  creator      User     @relation("CommentCreator", fields: [created_by], references: [id])
+
+  @@map("card_comments")
+}
+
