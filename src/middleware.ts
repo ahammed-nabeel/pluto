@@ -1,9 +1,21 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default auth((req) => {
-  const { nextUrl, auth: session } = req;
-  const isLoggedIn = !!session;
+export async function middleware(req: NextRequest) {
+  const { nextUrl } = req;
+  
+  // Use getToken directly to avoid importing full NextAuth, Prisma, and bcrypt 
+  // into the Vercel Edge runtime, which exceeds the 1MB free tier limit.
+  // The token contains all custom claims (role, status) added by the API route.
+  const token = await getToken({ 
+    req, 
+    secret: process.env.AUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === "production" || nextUrl.protocol === "https:",
+    salt: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
+  });
+  
+  const isLoggedIn = !!token;
   const isAuthPage = nextUrl.pathname.startsWith("/login");
 
   // Allow auth pages without session
@@ -22,17 +34,17 @@ export default auth((req) => {
   }
 
   // Check suspended users
-  if (session?.user?.status === "suspended") {
+  if (token?.status === "suspended") {
     return NextResponse.redirect(new URL("/login?error=suspended", nextUrl));
   }
 
   // Super admin only routes
-  if (nextUrl.pathname.startsWith("/admin") && session?.user?.role !== "super_admin") {
+  if (nextUrl.pathname.startsWith("/admin") && token?.role !== "super_admin") {
     return NextResponse.redirect(new URL("/boards", nextUrl));
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
