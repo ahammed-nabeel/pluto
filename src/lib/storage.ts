@@ -42,8 +42,9 @@ async function uploadS3(file: File): Promise<UploadResult> {
   const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
 
   const client = new S3Client({
-    region: process.env.AWS_REGION ?? "ap-south-1",
+    region: process.env.AWS_REGION ?? "us-east-1",
     ...(process.env.S3_ENDPOINT ? { endpoint: process.env.S3_ENDPOINT } : {}),
+    forcePathStyle: true,
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
@@ -65,8 +66,15 @@ async function uploadS3(file: File): Promise<UploadResult> {
     })
   );
 
-  const endpoint = process.env.S3_ENDPOINT ?? `https://s3.${process.env.AWS_REGION}.amazonaws.com`;
-  const url = `${endpoint}/${bucket}/${key}`;
+  let url;
+  if (process.env.S3_ENDPOINT && process.env.S3_ENDPOINT.includes('supabase.co')) {
+    // Generate Supabase public URL for reading the image
+    const publicEndpoint = process.env.S3_ENDPOINT.replace('/s3', '/object/public');
+    url = `${publicEndpoint}/${bucket}/${key}`;
+  } else {
+    const endpoint = process.env.S3_ENDPOINT ?? `https://s3.${process.env.AWS_REGION}.amazonaws.com`;
+    url = `${endpoint}/${bucket}/${key}`;
+  }
 
   return {
     url,
@@ -118,7 +126,9 @@ export async function deleteFile(key: string): Promise<void> {
   if (provider === "s3") {
     const { S3Client, DeleteObjectCommand } = await import("@aws-sdk/client-s3");
     const client = new S3Client({
-      region: process.env.AWS_REGION ?? "ap-south-1",
+      region: process.env.AWS_REGION ?? "us-east-1",
+      ...(process.env.S3_ENDPOINT ? { endpoint: process.env.S3_ENDPOINT } : {}),
+      forcePathStyle: true,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
