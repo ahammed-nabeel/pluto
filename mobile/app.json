@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Pluto.",
+    "name": "Pluto",
     "slug": "pluto",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,7 +22,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar"
+      "expo-status-bar",
+      ["./withAppName.js", "Pluto."]
     ],
     "extra": {
       "router": {},
