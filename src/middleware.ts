@@ -26,8 +26,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect unauthenticated users to login
+  // Return 401 for API routes, redirect unauthenticated users to login for pages
   if (!isLoggedIn) {
+    if (nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", nextUrl);
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
@@ -56,6 +59,6 @@ export const config = {
      * - public folder
      * - API auth routes (handled by NextAuth)
      */
-    "/((?!_next/static|_next/image|favicon.ico|favicon.svg|icon.svg|uploads|api/auth).*)",
+    "/((?!_next/static|_next/image|favicon.ico|favicon.svg|icon.svg|uploads|api/auth|api/mobile/login).*)",
   ],
 };

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Mail, Lock } from "lucide-react-native";
 import { colors, spacing, radius } from "../src/theme";
 import { API_URL, setToken } from "../src/api";
+import PlutoLogo from "../components/Logo";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -62,7 +63,7 @@ export default function Login() {
         {/* Brand Header */}
         <View style={styles.brandRow}>
           <View style={styles.brandIcon}>
-            <Text style={styles.brandIconText}>P</Text>
+            <PlutoLogo size={20} />
           </View>
           <Text style={styles.brandName}>Pluto.</Text>
         </View>
