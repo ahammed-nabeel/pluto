@@ -17,7 +17,12 @@ export default async function MobileAuthPage(props: { searchParams: Promise<{ pr
       // Fallback to default login page if no provider specified
       redirect("/login");
     }
+    // TypeScript needs to know execution stops here
+    return null;
   }
+
+  // Double check to satisfy TypeScript
+  if (!session || !session.user) return null;
 
   // User is logged in! Generate mobile token
   const token = jwt.sign(
