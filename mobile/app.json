@@ -2,6 +2,7 @@
   "expo": {
     "name": "Pluto",
     "slug": "pluto",
+    "scheme": "pluto",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -27,7 +28,8 @@
         "./withAppName.js",
         "Pluto."
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "extra": {
       "router": {},

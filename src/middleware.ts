@@ -59,6 +59,6 @@ export const config = {
      * - public folder
      * - API auth routes (handled by NextAuth)
      */
-    "/((?!_next/static|_next/image|favicon.ico|favicon.svg|icon.svg|uploads|api/auth|api/mobile/login).*)",
+    "/((?!_next/static|_next/image|favicon.ico|favicon.svg|icon.svg|uploads|api/auth|api/mobile/login|mobile-auth).*)",
   ],
 };
