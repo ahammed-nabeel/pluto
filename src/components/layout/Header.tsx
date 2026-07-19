@@ -37,6 +37,7 @@ function useBreadcrumb() {
 
 export function Header({ user }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
@@ -99,9 +100,17 @@ export function Header({ user }: HeaderProps) {
   return (
     <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-4 md:px-6 flex-shrink-0 z-30">
       {/* Left — logo/mobile menu + breadcrumb */}
-      <div className="flex items-center gap-6 min-w-0">
-        <Link href="/boards">
-          <PlutoLogo size="sm" textClassName="text-slate-900 hidden md:inline" />
+      <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="md:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        <Link href="/boards" className="flex-shrink-0">
+          <PlutoLogo size="sm" textClassName="text-slate-900 hidden sm:inline" />
         </Link>
 
         {/* Breadcrumb */}
@@ -121,8 +130,8 @@ export function Header({ user }: HeaderProps) {
         </nav>
       </div>
 
-      {/* Middle — Horizontal Navigation Links */}
-      <nav className="flex items-center gap-1">
+      {/* Middle — Horizontal Navigation Links (Desktop) */}
+      <nav className="hidden md:flex items-center gap-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (
@@ -167,7 +176,7 @@ export function Header({ user }: HeaderProps) {
           {notificationsOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setNotificationsOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fade-in max-h-[400px] overflow-y-auto flex flex-col">
+              <div className="absolute right-0 sm:right-0 -right-12 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fade-in max-h-[400px] overflow-y-auto flex flex-col">
                 <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
                   <span className="font-bold text-sm text-slate-800">Notifications</span>
                   <button
@@ -244,7 +253,7 @@ export function Header({ user }: HeaderProps) {
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-            <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fade-in">
+            <div className="absolute right-0 top-full mt-2 w-56 sm:w-52 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fade-in">
               {/* User info */}
               <div className="px-4 py-3 border-b border-slate-100">
                 <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
@@ -255,7 +264,7 @@ export function Header({ user }: HeaderProps) {
                 <Link
                   href="/profile"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 sm:py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   <User className="w-4 h-4 text-slate-400" />
                   Edit Profile
@@ -263,7 +272,7 @@ export function Header({ user }: HeaderProps) {
                 <Link
                   href="/profile"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 sm:py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   <Settings className="w-4 h-4 text-slate-400" />
                   Settings
@@ -273,7 +282,7 @@ export function Header({ user }: HeaderProps) {
               <div className="border-t border-slate-100 py-1">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                  className="flex items-center gap-3 px-4 py-3 sm:py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign out
@@ -284,6 +293,43 @@ export function Header({ user }: HeaderProps) {
         )}
       </div>
     </div>
+
+    {/* Mobile Navigation Drawer */}
+    {mobileMenuOpen && (
+      <>
+        <div 
+          className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 md:hidden" 
+          onClick={() => setMobileMenuOpen(false)} 
+        />
+        <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 md:hidden flex flex-col animate-in slide-in-from-left-full duration-200">
+          <div className="h-14 flex items-center px-4 border-b border-slate-100">
+            <PlutoLogo size="sm" textClassName="text-slate-900" />
+          </div>
+          
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            {navItems.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href || pathname.startsWith(href + "/");
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  )}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </>
+    )}
   </header>
 );
 }

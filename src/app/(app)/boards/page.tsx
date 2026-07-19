@@ -241,18 +241,18 @@ export default function BoardsPage() {
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <KanbanSquare className="w-8 h-8 text-blue-600" />
+            <KanbanSquare className="w-8 h-8 text-blue-600 flex-shrink-0" />
             Boards
           </h1>
           <p className="text-slate-500 mt-1.5 text-sm font-medium">
             Manage your workspace projects, lists, and leads.
           </p>
         </div>
-        <Link href="/boards/new">
-          <Button className="bg-blue-600 text-white hover:bg-blue-700 font-semibold py-2 px-4 rounded-xl shadow-lg shadow-blue-500/15">
+        <Link href="/boards/new" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700 font-semibold py-2 px-4 rounded-xl shadow-lg shadow-blue-500/15">
             <Plus className="w-4 h-4 mr-2" />
             New Board
           </Button>
@@ -345,18 +345,19 @@ export default function BoardsPage() {
           </div>
 
           {/* Calendar Grid */}
-          <div className="space-y-1">
-            <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400 uppercase tracking-wider py-2">
-              <div>Sun</div>
-              <div>Mon</div>
-              <div>Tue</div>
-              <div>Wed</div>
-              <div>Thu</div>
-              <div>Fri</div>
-              <div>Sat</div>
-            </div>
+          <div className="overflow-x-auto">
+            <div className="space-y-1 min-w-[600px]">
+              <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400 uppercase tracking-wider py-2">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+              </div>
 
-            <div className="grid grid-cols-7 border-t border-l border-slate-150 rounded-xl overflow-hidden bg-slate-50/30">
+              <div className="grid grid-cols-7 border-t border-l border-slate-150 rounded-xl overflow-hidden bg-slate-50/30">
               {calendarCells.map((cellDate, idx) => {
                 if (!cellDate) {
                   return <div key={`empty-${idx}`} className="min-h-24 bg-slate-50/20 border-r border-b border-slate-150" />;
@@ -410,6 +411,7 @@ export default function BoardsPage() {
               })}
             </div>
           </div>
+        </div>
         </div>
       )}
 

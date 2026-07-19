@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Pluto.",
+    "slug": "pluto",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "package": "com.ahammed.proteus",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "59da9270-3265-40dd-bd91-278f83c03c48"
+      }
+    },
+    "owner": "ahammednabeels-team"
+  }
+}

@@ -213,8 +213,8 @@ export function BoardViewWrapper({
   return (
     <div className="flex flex-col h-full">
       {/* Sub Header Tabs Row */}
-      <div className="flex items-center justify-between px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex-shrink-0 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 min-w-max">
           <Button
             variant={activeTab === "board" ? "secondary" : "ghost"}
             size="sm"
@@ -260,9 +260,9 @@ export function BoardViewWrapper({
         )}
 
         {activeTab === "dashboard" && (
-          <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-300">
             {/* KPI metrics cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
               {/* Total Leads */}
               <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between shadow-sm">
                 <div>
@@ -311,9 +311,9 @@ export function BoardViewWrapper({
             </div>
 
             {/* Charts row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Pipeline by list */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm lg:col-span-2">
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm lg:col-span-2">
                 <h3 className="text-sm font-bold text-slate-900 mb-4">Pipeline Value by Stage List</h3>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
@@ -328,7 +328,7 @@ export function BoardViewWrapper({
               </div>
 
               {/* Leads by source */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col">
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm flex flex-col">
                 <h3 className="text-sm font-bold text-slate-900 mb-4">Leads by Source</h3>
                 <div className="h-56 flex-1 relative">
                   {cardsBySource.length === 0 ? (
@@ -358,9 +358,9 @@ export function BoardViewWrapper({
             </div>
 
             {/* Logs activity and labels distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Recent activity stream */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm lg:col-span-2">
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm lg:col-span-2">
                 <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-blue-500" />
                   Recent Board Activities
@@ -383,7 +383,7 @@ export function BoardViewWrapper({
               </div>
 
               {/* Status breakdown */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 mb-4">Lead Status breakdown</h3>
                 <div className="space-y-4">
                   {cardsByLabel.map((l) => (
@@ -407,9 +407,9 @@ export function BoardViewWrapper({
         )}
 
         {activeTab === "reports" && (
-          <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
             {/* Export buttons header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <h3 className="text-base font-bold text-slate-800">Export Board Reports</h3>
                 <p className="text-xs text-slate-400 mt-0.5">Filter leads and export sheets instantly.</p>

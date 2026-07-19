@@ -253,7 +253,6 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const [demoCode, setDemoCode] = useState<string | null>(null);
 
   // Flow control
   const [step, setStep] = useState<AuthStep>("EMAIL_INPUT");
@@ -333,7 +332,6 @@ function LoginForm() {
       });
       const data = await res.json();
       if (res.ok) {
-        setDemoCode(data.code);
         setStep("SIGNUP_VERIFY");
         toast({ title: "Verification code sent!", variant: "success" });
       } else {
@@ -643,13 +641,6 @@ function LoginForm() {
             {/* Step 5: Verification Code Entry */}
             {step === "SIGNUP_VERIFY" && (
               <div className="space-y-4">
-                {demoCode && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-2 text-xs text-blue-750 justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                    <span>Demo Verification Code: <strong className="text-sm text-blue-900 tracking-wider font-extrabold">{demoCode}</strong></span>
-                  </div>
-                )}
-
                 <div className="space-y-2">
                   <label htmlFor="code" className="text-xs font-bold text-slate-500 uppercase">Verification Code</label>
                   <input

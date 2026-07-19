@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Abel } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
@@ -32,8 +32,13 @@ export const metadata: Metadata = {
     ],
     shortcut: "/favicon.svg",
   },
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   robots: "noindex",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

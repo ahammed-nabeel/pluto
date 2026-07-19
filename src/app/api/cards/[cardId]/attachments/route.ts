@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const card = await prisma.card.findUnique({ where: { id: cardId } });
     if (!card) return Response.json({ error: "Card not found" }, { status: 404 });
 
-    const formData = await req.formData();
+    const formData = (await req.formData()) as any;
     const file = formData.get("file") as File | null;
 
     if (!file) return Response.json({ error: "No file provided" }, { status: 400 });

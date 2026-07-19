@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,11 +42,15 @@ export async function POST(req: NextRequest) {
     });
 
     console.log(`[VERIFICATION CODE FOR ${cleanEmail}]: ${code}`);
+    
+    // Send actual email (this will only log a warning if SMTP is not configured)
+    await sendVerificationEmail({ to: cleanEmail, code });
 
-    // Return code in response for testing/demo purposes
-    return Response.json({ success: true, code });
+    // Do NOT return the code in the response to prevent easy abuse
+    return Response.json({ success: true, message: "Verification code sent" });
   } catch (error) {
     console.error("[POST /api/auth/signup/send-code]", error);
     return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
+
