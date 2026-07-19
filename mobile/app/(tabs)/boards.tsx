@@ -1,44 +1,69 @@
-import { View, Text, ScrollView, Pressable, StyleSheet, TextInput } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import { router } from "expo-router";
 import { colors, spacing, radius, typography } from "../../src/theme";
-
-const MOCK_STATS = [
-  { label: "TOTAL OPEN TASKS", value: "0", icon: "📋" },
-  { label: "MY OPEN TASKS", value: "0", icon: "✅" },
-  { label: "DUE TODAY", value: "0", icon: "⏰" },
-];
-
-const MOCK_BOARDS = [
-  {
-    id: "1",
-    name: "Sales Pipeline",
-    description: "Main inbound sales tracking",
-    cardCount: 4,
-    listCount: 3,
-    updatedAt: "2h ago",
-    color: "#2563EB",
-  },
-  {
-    id: "2",
-    name: "Partnerships",
-    description: "B2B partnership leads",
-    cardCount: 2,
-    listCount: 2,
-    updatedAt: "1d ago",
-    color: "#7C3AED",
-  },
-  {
-    id: "3",
-    name: "Support Tickets",
-    description: "Customer support queue",
-    cardCount: 7,
-    listCount: 4,
-    updatedAt: "3h ago",
-    color: "#059669",
-  },
-];
+import { fetchWithAuth } from "../../src/api";
 
 export default function Boards() {
+  const [boards, setBoards] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalTasks: 0,
+    myTasks: 0,
+    dueToday: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = async () => {
+    try {
+      // Fetch boards
+      const boardsRes = await fetchWithAuth("/boards");
+      if (boardsRes.ok) {
+        const json = await boardsRes.json();
+        setBoards(json.data || []);
+      }
+
+      // Fetch dashboard stats for high-level metrics
+      const dashRes = await fetchWithAuth("/dashboard");
+      if (dashRes.ok) {
+        const json = await dashRes.json();
+        const data = json.data;
+        
+        // Sum total open tasks across all statuses except completed
+        const openTasks = data.tasksByStatus
+          ?.filter((s: any) => s.status !== "completed")
+          .reduce((sum: number, s: any) => sum + s.count, 0) || 0;
+
+        setStats({
+          totalTasks: openTasks,
+          myTasks: data.tasksByUser?.[0]?.count || 0, // Simplified for now
+          dueToday: data.overdueTasksCount || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading boards:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadData();
+  }, []);
+
+  // Use a consistent array for stats rendering
+  const statItems = [
+    { label: "TOTAL OPEN TASKS", value: stats.totalTasks.toString(), icon: "📋" },
+    { label: "MY OPEN TASKS", value: stats.myTasks.toString(), icon: "✅" },
+    { label: "DUE TODAY", value: stats.dueToday.toString(), icon: "⏰" },
+  ];
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -70,49 +95,65 @@ export default function Boards() {
         </View>
       </View>
 
-      <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Stats row */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsRow} contentContainerStyle={styles.statsContent}>
-          {MOCK_STATS.map((stat) => (
-            <View key={stat.label} style={styles.statCard}>
-              <Text style={styles.statIcon}>{stat.icon}</Text>
-              <View>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-                <Text style={styles.statValue}>{stat.value}</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* My Boards */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Boards</Text>
-          {MOCK_BOARDS.map((board) => (
-            <Pressable
-              key={board.id}
-              style={styles.boardCard}
-              onPress={() => router.push(`/(tabs)/board/${board.id}`)}
-            >
-              <View style={[styles.boardColorBar, { backgroundColor: board.color }]} />
-              <View style={styles.boardCardBody}>
-                <View style={styles.boardCardTop}>
-                  <Text style={styles.boardName}>{board.name}</Text>
-                  <Text style={styles.boardUpdated}>{board.updatedAt}</Text>
-                </View>
-                <Text style={styles.boardDesc}>{board.description}</Text>
-                <View style={styles.boardMeta}>
-                  <Text style={styles.boardMetaText}>📄 {board.listCount} lists</Text>
-                  <Text style={styles.boardMetaDot}>·</Text>
-                  <Text style={styles.boardMetaText}>🃏 {board.cardCount} cards</Text>
-                </View>
-              </View>
-              <Text style={styles.boardArrow}>›</Text>
-            </Pressable>
-          ))}
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
+      ) : (
+        <ScrollView 
+          style={styles.body} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {/* Stats row */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsRow} contentContainerStyle={styles.statsContent}>
+            {statItems.map((stat) => (
+              <View key={stat.label} style={styles.statCard}>
+                <Text style={styles.statIcon}>{stat.icon}</Text>
+                <View>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
 
-        <View style={{ height: 24 }} />
-      </ScrollView>
+          {/* My Boards */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>My Boards</Text>
+            {boards.length === 0 ? (
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>No boards found.</Text>
+            ) : (
+              boards.map((board) => (
+                <Pressable
+                  key={board.id}
+                  style={styles.boardCard}
+                  onPress={() => router.push(`/(tabs)/board/${board.id}`)}
+                >
+                  <View style={[styles.boardColorBar, { backgroundColor: board.settings?.color || "#2563EB" }]} />
+                  <View style={styles.boardCardBody}>
+                    <View style={styles.boardCardTop}>
+                      <Text style={styles.boardName}>{board.name}</Text>
+                      <Text style={styles.boardUpdated}>
+                        {new Date(board.updated_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Text style={styles.boardDesc}>{board.description || "No description"}</Text>
+                    <View style={styles.boardMeta}>
+                      <Text style={styles.boardMetaText}>📄 {board._count?.lists || 0} lists</Text>
+                      <Text style={styles.boardMetaDot}>·</Text>
+                      <Text style={styles.boardMetaText}>🃏 {board._count?.cards || 0} cards</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.boardArrow}>›</Text>
+                </Pressable>
+              ))
+            )}
+          </View>
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      )}
     </View>
   );
 }

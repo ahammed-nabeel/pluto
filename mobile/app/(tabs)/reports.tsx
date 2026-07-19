@@ -1,14 +1,12 @@
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet } from "react-native";
-import { useState } from "react";
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, ActivityIndicator, RefreshControl } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import { colors, spacing, radius } from "../../src/theme";
-
-const MOCK_LEADS = [
-  { id: "1", board: "Sales Pipeline", list: "Incoming", name: "Acme Corp Deal", client: "Acme Corp", priority: "High", source: "Website", value: "₹5,00,000" },
-  { id: "2", board: "Sales Pipeline", list: "Contacted", name: "Site Visit Inquiry", client: "John Doe", priority: "Medium", source: "Referral", value: "₹2,50,000" },
-  { id: "3", board: "Partnerships", list: "New Leads", name: "TechFlow Demo", client: "TechFlow Inc.", priority: "Low", source: "Cold Outreach", value: "₹1,20,000" },
-];
+import { fetchWithAuth } from "../../src/api";
 
 const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
+  high: { bg: "#FEE2E2", text: "#B91C1C" },
+  medium: { bg: "#FEF3C7", text: "#92400E" },
+  low: { bg: "#DBEAFE", text: "#1D4ED8" },
   High: { bg: "#FEE2E2", text: "#B91C1C" },
   Medium: { bg: "#FEF3C7", text: "#92400E" },
   Low: { bg: "#DBEAFE", text: "#1D4ED8" },
@@ -16,12 +14,39 @@ const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
 
 export default function Reports() {
   const [search, setSearch] = useState("");
+  const [leads, setLeads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filtered = MOCK_LEADS.filter(
-    (l) =>
-      l.name.toLowerCase().includes(search.toLowerCase()) ||
-      l.client.toLowerCase().includes(search.toLowerCase())
-  );
+  const loadData = async (query = "") => {
+    try {
+      const url = query ? `/reports?search=${encodeURIComponent(query)}` : `/reports`;
+      const res = await fetchWithAuth(url);
+      if (res.ok) {
+        const json = await res.json();
+        setLeads(json.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading reports:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    // Debounce search slightly
+    setLoading(true);
+    const delay = setTimeout(() => {
+      loadData(search);
+    }, 400);
+    return () => clearTimeout(delay);
+  }, [search]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadData(search);
+  }, [search]);
 
   return (
     <View style={styles.container}>
@@ -31,7 +56,7 @@ export default function Reports() {
         <Text style={styles.pageSubtitle}>Track and analyze your pipeline data.</Text>
       </View>
 
-      <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+      <View style={styles.body}>
         {/* Filter bar */}
         <View style={styles.filterRow}>
           <View style={styles.searchWrap}>
@@ -49,52 +74,67 @@ export default function Reports() {
           </Pressable>
         </View>
 
-        {/* Results count */}
-        <Text style={styles.resultsCount}>{filtered.length} leads found</Text>
-
-        {/* Lead cards */}
-        {filtered.map((lead) => {
-          const p = PRIORITY_COLORS[lead.priority] ?? PRIORITY_COLORS.Low;
-          return (
-            <View key={lead.id} style={styles.leadCard}>
-              <View style={styles.leadTop}>
-                <Text style={styles.leadName}>{lead.name}</Text>
-                <View style={[styles.priorityBadge, { backgroundColor: p.bg }]}>
-                  <Text style={[styles.priorityText, { color: p.text }]}>{lead.priority}</Text>
-                </View>
-              </View>
-              <Text style={styles.leadClient}>{lead.client}</Text>
-              <View style={styles.leadMeta}>
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Board</Text>
-                  <Text style={styles.metaValue}>{lead.board}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>List</Text>
-                  <Text style={styles.metaValue}>{lead.list}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Source</Text>
-                  <Text style={styles.metaValue}>{lead.source}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Value</Text>
-                  <Text style={[styles.metaValue, styles.valueText]}>{lead.value}</Text>
-                </View>
-              </View>
-            </View>
-          );
-        })}
-
-        {filtered.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyText}>No leads found</Text>
+        {loading && !refreshing ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        )}
+        ) : (
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          >
+            {/* Results count */}
+            <Text style={styles.resultsCount}>{leads.length} leads found</Text>
 
-        <View style={{ height: 24 }} />
-      </ScrollView>
+            {/* Lead cards */}
+            {leads.map((lead) => {
+              const p = PRIORITY_COLORS[lead.priority || "low"] ?? PRIORITY_COLORS.low;
+              return (
+                <View key={lead.id} style={styles.leadCard}>
+                  <View style={styles.leadTop}>
+                    <Text style={styles.leadName}>{lead.project_name || "Untitled Lead"}</Text>
+                    <View style={[styles.priorityBadge, { backgroundColor: p.bg }]}>
+                      <Text style={[styles.priorityText, { color: p.text }]}>{lead.priority || "low"}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.leadClient}>{lead.client_name || "Unknown Client"}</Text>
+                  <View style={styles.leadMeta}>
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaLabel}>Board</Text>
+                      <Text style={styles.metaValue}>{lead.board?.name || "N/A"}</Text>
+                    </View>
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaLabel}>List</Text>
+                      <Text style={styles.metaValue}>{lead.list?.title || "N/A"}</Text>
+                    </View>
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaLabel}>Source</Text>
+                      <Text style={styles.metaValue}>{lead.source || "None"}</Text>
+                    </View>
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaLabel}>Value</Text>
+                      <Text style={[styles.metaValue, styles.valueText]}>
+                        {lead.card_value 
+                          ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(lead.card_value)
+                          : "₹0"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+
+            {leads.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>📭</Text>
+                <Text style={styles.emptyText}>No leads found</Text>
+              </View>
+            )}
+
+            <View style={{ height: 24 }} />
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
@@ -153,7 +193,7 @@ const styles = StyleSheet.create({
   leadName: { fontSize: 15, fontWeight: "600", color: colors.textPrimary, flex: 1, marginRight: 8 },
   leadClient: { fontSize: 13, color: colors.textSecondary, marginBottom: 12 },
   priorityBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full },
-  priorityText: { fontSize: 11, fontWeight: "700" },
+  priorityText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
   leadMeta: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   metaItem: {},
   metaLabel: { fontSize: 10, fontWeight: "600", color: colors.textMuted, letterSpacing: 0.3, marginBottom: 2 },

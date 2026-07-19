@@ -1,23 +1,56 @@
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { useState } from "react";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Mail, Lock } from "lucide-react-native";
 import { colors, spacing, radius } from "../src/theme";
+import { API_URL, setToken } from "../src/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<"email" | "password">("email");
+  const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (step === "email") {
+      if (!email.includes('@')) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address');
+        return;
+      }
       setStep("password");
     } else {
-      // Attempt login
-      router.replace("/(tabs)/boards");
+      if (!password) {
+        Alert.alert('Error', 'Please enter your password');
+        return;
+      }
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/mobile/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+        
+        if (data.token) {
+          await setToken(data.token);
+          router.replace("/(tabs)/boards");
+        } else {
+          throw new Error('No token received');
+        }
+      } catch (err: any) {
+        Alert.alert('Login Failed', err.message || 'Check your connection');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -70,10 +103,15 @@ export default function Login() {
           )}
 
           <Pressable 
-            style={({ pressed }) => [styles.continueBtn, pressed && styles.btnPressed]} 
+            style={({ pressed }) => [styles.continueBtn, pressed && styles.btnPressed, loading && { opacity: 0.7 }]} 
             onPress={handleContinue}
+            disabled={loading}
           >
-            <Text style={styles.continueBtnText}>{step === "email" ? "Continue" : "Sign In"}</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.continueBtnText}>{step === "email" ? "Continue" : "Sign In"}</Text>
+            )}
           </Pressable>
 
           <Text style={styles.signupHint}>

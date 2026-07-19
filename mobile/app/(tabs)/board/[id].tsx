@@ -1,38 +1,13 @@
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { colors, spacing, radius } from "../../../src/theme";
-
-const MOCK_LISTS = [
-  {
-    id: "l1",
-    title: "Incoming",
-    cards: [
-      { id: "c1", title: "Acme Corp Deal", value: "₹5,00,000", priority: "High", assignee: "TU" },
-      { id: "c2", title: "Site Visit Inquiry", value: "₹2,50,000", priority: "Medium", assignee: "TU" },
-    ],
-  },
-  {
-    id: "l2",
-    title: "Contacted",
-    cards: [
-      { id: "c3", title: "Product Demo", value: "₹1,20,000", priority: "Low", assignee: "TU" },
-    ],
-  },
-  {
-    id: "l3",
-    title: "Proposal Sent",
-    cards: [
-      { id: "c4", title: "Annual Retainer", value: "₹15,00,000", priority: "High", assignee: "TU" },
-    ],
-  },
-  {
-    id: "l4",
-    title: "Won",
-    cards: [],
-  },
-];
+import { fetchWithAuth } from "../../../src/api";
 
 const PRIORITY: Record<string, { bg: string; text: string }> = {
+  high: { bg: "#FEE2E2", text: "#B91C1C" },
+  medium: { bg: "#FEF3C7", text: "#92400E" },
+  low: { bg: "#DBEAFE", text: "#1D4ED8" },
   High: { bg: "#FEE2E2", text: "#B91C1C" },
   Medium: { bg: "#FEF3C7", text: "#92400E" },
   Low: { bg: "#DBEAFE", text: "#1D4ED8" },
@@ -40,6 +15,64 @@ const PRIORITY: Record<string, { bg: string; text: string }> = {
 
 export default function BoardDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [board, setBoard] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const res = await fetchWithAuth(`/boards/${id}`);
+      if (res.ok) {
+        const json = await res.json();
+        setBoard(json.data);
+      }
+    } catch (error) {
+      console.error("Error loading board details:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      loadData();
+    }
+  }, [id]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadData();
+  }, [id]);
+
+  const getInitials = (name?: string) => {
+    if (!name) return "??";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!board) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Board not found</Text>
+        <Pressable onPress={() => router.back()} style={{ marginTop: 20 }}>
+          <Text style={{ color: colors.primary }}>Go Back</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -48,7 +81,7 @@ export default function BoardDetail() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹ Back</Text>
         </Pressable>
-        <Text style={styles.boardTitle}>Sales Pipeline</Text>
+        <Text style={styles.boardTitle} numberOfLines={1}>{board.name}</Text>
         <View style={styles.headerRight}>
           <Pressable style={styles.iconBtn}><Text>⚙️</Text></Pressable>
         </View>
@@ -68,56 +101,71 @@ export default function BoardDetail() {
       </View>
 
       {/* Kanban Board - horizontal scroll */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.board}>
-        {MOCK_LISTS.map((list) => (
-          <View key={list.id} style={styles.column}>
-            {/* Column header */}
-            <View style={styles.columnHeader}>
-              <Text style={styles.columnTitle}>{list.title}</Text>
-              <View style={styles.countBubble}>
-                <Text style={styles.countText}>{list.cards.length}</Text>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={styles.board}
+      >
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={{ flexDirection: "row" }}
+        >
+          {board.lists?.map((list: any) => (
+            <View key={list.id} style={styles.column}>
+              {/* Column header */}
+              <View style={styles.columnHeader}>
+                <Text style={styles.columnTitle}>{list.title}</Text>
+                <View style={styles.countBubble}>
+                  <Text style={styles.countText}>{list.cards?.length || 0}</Text>
+                </View>
+                <Pressable style={styles.colMenu}><Text style={styles.colMenuDots}>⋯</Text></Pressable>
               </View>
-              <Pressable style={styles.colMenu}><Text style={styles.colMenuDots}>⋯</Text></Pressable>
+
+              {/* Cards */}
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.cardScroll}>
+                {list.cards?.map((card: any) => {
+                  const p = PRIORITY[card.priority || "low"] ?? PRIORITY.low;
+                  return (
+                    <Pressable key={card.id} style={styles.card}>
+                      <View style={styles.cardHeader}>
+                        <Text style={styles.cardTitle} numberOfLines={2}>{card.title}</Text>
+                      </View>
+                      <View style={styles.cardFooter}>
+                        <View style={[styles.priorityBadge, { backgroundColor: p.bg }]}>
+                          <Text style={[styles.priorityText, { color: p.text }]}>
+                            {card.priority || "low"}
+                          </Text>
+                        </View>
+                        {card.card_value != null && (
+                          <Text style={styles.cardValue}>
+                            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(card.card_value)}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.cardAssignee}>
+                        <View style={styles.assigneeAvatar}>
+                          <Text style={styles.assigneeText}>
+                            {getInitials(card.cardOwner?.name)}
+                          </Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+
+                {/* Add card button */}
+                <Pressable style={styles.addCardBtn}>
+                  <Text style={styles.addCardText}>+ Add card</Text>
+                </Pressable>
+              </ScrollView>
             </View>
+          ))}
 
-            {/* Cards */}
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.cardScroll}>
-              {list.cards.map((card) => {
-                const p = PRIORITY[card.priority] ?? PRIORITY.Low;
-                return (
-                  <Pressable key={card.id} style={styles.card}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardTitle} numberOfLines={2}>{card.title}</Text>
-                    </View>
-                    <View style={styles.cardFooter}>
-                      <View style={[styles.priorityBadge, { backgroundColor: p.bg }]}>
-                        <Text style={[styles.priorityText, { color: p.text }]}>{card.priority}</Text>
-                      </View>
-                      {card.value && (
-                        <Text style={styles.cardValue}>{card.value}</Text>
-                      )}
-                    </View>
-                    <View style={styles.cardAssignee}>
-                      <View style={styles.assigneeAvatar}>
-                        <Text style={styles.assigneeText}>{card.assignee}</Text>
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
-
-              {/* Add card button */}
-              <Pressable style={styles.addCardBtn}>
-                <Text style={styles.addCardText}>+ Add card</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        ))}
-
-        {/* Add list button */}
-        <Pressable style={styles.addListBtn}>
-          <Text style={styles.addListText}>+ Add list</Text>
-        </Pressable>
+          {/* Add list button */}
+          <Pressable style={styles.addListBtn}>
+            <Text style={styles.addListText}>+ Add list</Text>
+          </Pressable>
+        </ScrollView>
       </ScrollView>
     </View>
   );
@@ -204,7 +252,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 13, fontWeight: "600", color: colors.textPrimary, lineHeight: 18 },
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   priorityBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.full },
-  priorityText: { fontSize: 10, fontWeight: "700" },
+  priorityText: { fontSize: 10, fontWeight: "700", textTransform: "capitalize" },
   cardValue: { fontSize: 12, fontWeight: "700", color: colors.primary },
   cardAssignee: { flexDirection: "row", justifyContent: "flex-end" },
   assigneeAvatar: {
