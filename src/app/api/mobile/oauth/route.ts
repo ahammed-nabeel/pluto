@@ -68,7 +68,7 @@ export async function POST(req: Request) {
           email,
           name: name || email.split("@")[0],
           profile_picture_url: image,
-          role: "user",
+          role: "member",
           status: "active",
         },
       });
