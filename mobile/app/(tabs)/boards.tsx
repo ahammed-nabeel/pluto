@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { router } from "expo-router";
 import { colors, spacing, radius, typography } from "../../src/theme";
 import { fetchWithAuth } from "../../src/api";
+import PlutoLogo from "../../components/Logo";
 
 export default function Boards() {
   const [boards, setBoards] = useState<any[]>([]);
@@ -70,7 +71,9 @@ export default function Boards() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.logo}>
-            <Text style={styles.logoIcon}>P</Text>
+            <View style={styles.logoIcon}>
+              <PlutoLogo size={18} />
+            </View>
             <Text style={styles.logoText}>pluto.</Text>
           </View>
           <View style={styles.headerActions}>
@@ -182,11 +185,8 @@ const styles = StyleSheet.create({
     height: 28,
     backgroundColor: colors.primary,
     borderRadius: 6,
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
-    lineHeight: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
   logoText: { fontSize: 18, fontWeight: "700", color: colors.textPrimary },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
