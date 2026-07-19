@@ -15,6 +15,17 @@ import { colors, radius } from "../src/theme";
 
 WebBrowser.maybeCompleteAuthSession();
 
+const microsoftDiscovery: DiscoveryDocument = {
+  authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+  tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+};
+
+// Configure Native Google Sign-In
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || 'dummy-web-client-id',
+  offlineAccess: true,
+});
+
 function GoogleIcon() {
   return (
     <Svg viewBox="0 0 24 24" width={24} height={24}>
@@ -37,20 +48,12 @@ function MicrosoftIcon() {
   );
 }
 
-const microsoftDiscovery: DiscoveryDocument = {
-  authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-  tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
-};
 
-// Configure Native Google Sign-In
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || 'dummy-web-client-id',
-  offlineAccess: true,
-});
 
 const { height } = Dimensions.get('window');
 
-export default function Login() {
+export default function Signup() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -124,23 +127,23 @@ export default function Login() {
     }
   };
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+  const handleSignup = async () => {
+    if (!name || !email || !password) {
+      Alert.alert('Error', 'Please enter name, email, and password');
       return;
     }
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/mobile/login`, {
+      const response = await fetch(`${API_URL}/mobile/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.error || 'Signup failed');
       }
       
       if (data.token) {
@@ -150,7 +153,7 @@ export default function Login() {
         throw new Error('No token received');
       }
     } catch (err: any) {
-      Alert.alert('Login Failed', err.message || 'Check your connection');
+      Alert.alert('Signup Failed', err.message || 'Check your connection');
     } finally {
       setLoading(false);
     }
@@ -173,9 +176,15 @@ export default function Login() {
 
           {/* Form Section */}
           <View style={styles.formSection}>
-            <Text style={styles.title}>Login to your Account</Text>
+            <Text style={styles.title}>Create your Account</Text>
 
             <View style={styles.inputs}>
+              <AuthInput
+                placeholder="Name"
+                autoCapitalize="words"
+                value={name}
+                onChangeText={setName}
+              />
               <AuthInput
                 placeholder="Email"
                 keyboardType="email-address"
@@ -197,17 +206,17 @@ export default function Login() {
                 pressed ? styles.btnPressed : null, 
                 loading ? { opacity: 0.7 } : null
               ]} 
-              onPress={handleLogin}
+              onPress={handleSignup}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.primaryBtnText}>Sign in</Text>
+                <Text style={styles.primaryBtnText}>Sign up</Text>
               )}
             </Pressable>
 
-            <Text style={styles.orText}>- Or sign in with -</Text>
+            <Text style={styles.orText}>- Or sign up with -</Text>
 
             <View style={styles.socialRow}>
               <SocialButton
@@ -226,8 +235,8 @@ export default function Login() {
           {/* Footer Section */}
           <View style={styles.footerSection}>
             <Text style={styles.footerText}>
-              Don't have an account?{" "}
-              <Text style={styles.footerLink} onPress={() => router.push("/signup")}>Sign up</Text>
+              Already have an account?{" "}
+              <Text style={styles.footerLink} onPress={() => router.push("/login")}>Sign in</Text>
             </Text>
           </View>
 

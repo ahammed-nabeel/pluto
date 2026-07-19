@@ -14,7 +14,9 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://pluto-v2.vercel.app/api",
-        "EXPO_PUBLIC_APP_NAME": "Proteus"
+        "EXPO_PUBLIC_APP_NAME": "Proteus",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID": "913798701227-brentjeqcbh5krpuatukgm2drnosb9vr.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB": "913798701227-3luspv0v1ad0dr0q7clcteckgs29bamc.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -23,7 +25,9 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://pluto-v2.vercel.app/api",
-        "EXPO_PUBLIC_APP_NAME": "Proteus"
+        "EXPO_PUBLIC_APP_NAME": "Proteus",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID": "913798701227-brentjeqcbh5krpuatukgm2drnosb9vr.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB": "913798701227-3luspv0v1ad0dr0q7clcteckgs29bamc.apps.googleusercontent.com"
       }
     }
   },

@@ -4,6 +4,9 @@ export const colors = {
   primary: "#2563EB",
   primaryLight: "#EFF6FF",
   primaryDark: "#1D4ED8",
+  
+  // Auth screen specific
+  authPrimary: "#203A70", // Deep blue from reference
 
   // Dark navy sidebar/header (matches web left panel)
   navy: "#0F172A",

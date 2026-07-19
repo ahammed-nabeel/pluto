@@ -12,11 +12,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff",
+        "backgroundColor": "#203A70",
         "foregroundImage": "./assets/icon.png"
       },
-      "package": "com.ahammed.proteus",
+      "package": "com.brandcaster.pluto",
       "predictiveBackGestureEnabled": false
+    },
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#203A70"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,7 +34,8 @@
         "Pluto."
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "router": {},
