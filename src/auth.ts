@@ -6,6 +6,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import type { GlobalRole } from "@prisma/client";
 import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -47,6 +48,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
         };
       }
+    }),
+    Credentials({
+      id: "mobile-token",
+      name: "Mobile Token",
+      credentials: {
+        token: { label: "Token", type: "text" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.token) return null;
+        try {
+          const decoded = jwt.verify(
+            credentials.token as string, 
+            process.env.AUTH_SECRET || "fallback_secret_for_dev"
+          ) as any;
+          
+          if (!decoded?.email) return null;
+          
+          const user = await prisma.user.findUnique({
+            where: { email: decoded.email }
+          });
+          
+          if (!user) return null;
+          
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.profile_picture_url,
+            role: user.role,
+          };
+        } catch (e) {
+          console.error("Mobile token verification failed", e);
+          return null;
+        }
+      }
     })
   ],
   session: { strategy: "jwt" },
@@ -57,7 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user, account }) {
       if (user.email) {
-        if (account?.provider === "credentials") {
+        if (account?.provider === "credentials" || account?.provider === "mobile-token") {
           await prisma.user.update({
             where: { email: user.email },
             data: { last_login: new Date() }

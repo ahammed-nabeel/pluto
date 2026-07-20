@@ -29,7 +29,7 @@ export default function Index() {
       const token = await getToken();
       setTimeout(() => {
         if (token) {
-          router.replace("/(tabs)/boards");
+          router.replace("/webview");
         } else {
           router.replace("/login");
         }

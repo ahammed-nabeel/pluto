@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthRequest, makeRedirectUri, DiscoveryDocument, ResponseType } from 'expo-auth-session';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { API_URL, setToken } from "../src/api";
+import { API_URL, setToken, setUser } from "../src/api";
 import PlutoLogo from "../components/Logo";
 import Svg, { Path } from 'react-native-svg';
 import AuthInput from "../components/AuthInput";
@@ -97,7 +97,8 @@ export default function Signup() {
       
       if (data.token) {
         await setToken(data.token);
-        router.replace("/(tabs)/boards");
+        if (data.user) await setUser(data.user);
+        router.replace("/webview");
       }
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Could not verify token with server');
@@ -148,7 +149,8 @@ export default function Signup() {
       
       if (data.token) {
         await setToken(data.token);
-        router.replace("/(tabs)/boards");
+        if (data.user) await setUser(data.user);
+        router.replace("/webview");
       } else {
         throw new Error('No token received');
       }

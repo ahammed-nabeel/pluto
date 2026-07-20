@@ -25,8 +25,26 @@ export async function setToken(token: string) {
 export async function removeToken() {
   try {
     await SecureStore.deleteItemAsync('token');
+    await SecureStore.deleteItemAsync('user');
   } catch (e) {
     console.error('Error removing token', e);
+  }
+}
+
+export async function setUser(user: any) {
+  try {
+    await SecureStore.setItemAsync('user', JSON.stringify(user));
+  } catch (e) {
+    console.error('Error saving user', e);
+  }
+}
+
+export async function getUser() {
+  try {
+    const userStr = await SecureStore.getItemAsync('user');
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (e) {
+    return null;
   }
 }
 
