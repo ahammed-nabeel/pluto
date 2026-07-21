@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions } from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Platform, Dimensions } from "react-native";
 import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -12,6 +12,7 @@ import Svg, { Path } from 'react-native-svg';
 import AuthInput from "../components/AuthInput";
 import SocialButton from "../components/SocialButton";
 import { colors, radius } from "../src/theme";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -159,14 +160,15 @@ export default function Login() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <StatusBar style="dark" />
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <StatusBar style="dark" />
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView 
+        contentContainerStyle={styles.scrollContainer} 
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={20}
+      >
           
           {/* Logo Section */}
           <View style={styles.logoSection}>
@@ -233,9 +235,8 @@ export default function Login() {
             </Text>
           </View>
 
-        </ScrollView>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   inputs: {
-    gap: -4, // AuthInput has marginBottom 16
+    
   },
   primaryBtn: {
     backgroundColor: colors.authPrimary,

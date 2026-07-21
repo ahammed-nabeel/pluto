@@ -55,13 +55,13 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-slate-500 mt-1">Live analytics, deal progression, and sales operations performance metrics</p>
+        <p className="text-slate-500 mt-1 text-sm md:text-base">Live analytics, deal progression, and sales operations performance metrics</p>
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Cards */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-between shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 md:p-6 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Total Leads/Projects</p>
             <p className="text-3xl font-extrabold text-slate-900 mt-2">{data.totalCards}</p>
@@ -110,9 +110,9 @@ export default function DashboardPage() {
       {/* Charts section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Deal progression by list */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm lg:col-span-2">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 md:p-6 shadow-sm lg:col-span-2 min-w-0">
           <h2 className="text-base font-bold text-slate-900 mb-4">Pipeline by List</h2>
-          <div className="h-80">
+          <div className="h-72 md:h-80 w-full overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.cardsByList}>
                 <XAxis dataKey="listTitle" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />

@@ -3,7 +3,7 @@
     "name": "Pluto",
     "slug": "pluto",
     "scheme": "pluto",
-    "version": "1.0.0",
+    "version": "1.0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -43,6 +43,12 @@
         "projectId": "59da9270-3265-40dd-bd91-278f83c03c48"
       }
     },
-    "owner": "ahammednabeels-team"
+    "owner": "ahammednabeels-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/59da9270-3265-40dd-bd91-278f83c03c48"
+    }
   }
 }
